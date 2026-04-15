@@ -1,0 +1,28 @@
+# --- Secrets et Configs Sensibles ---
+.env
+certs/
+*.tfvars
+*.tfvars.json
+# Si tu stockes tes clés API dans un fichier de variables spécifique
+credentials.tfris
+
+# --- Terraform ---
+# Dossier contenant les plugins (plusieurs Mo, inutile à commit)
+.terraform/
+# Fichiers d'état (Contiennent des infos sensibles sur ton infra)
+terraform.tfstate
+terraform.tfstate.backup
+# Fichiers de log en cas de crash
+crash.log
+*.usage.json
+
+# --- Ansible ---
+# On ignore l'inventaire car il est généré automatiquement par Terraform
+# Cela évite de commit des IP publiques qui changent tout le temps
+ansible/inventory.ini
+# Fichiers de retry en cas d'échec d'Ansible
+*.retry
+
+# --- OS ---
+.DS_Store
+Thumbs.db

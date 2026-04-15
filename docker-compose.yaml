@@ -1,0 +1,69 @@
+services:
+  mariadb:
+    image: mariadb:10.6
+    container_name: cloud1_mariadb
+    restart: always # Pour redémarrer automatiquement [cite: 40]
+    volumes:
+      - db_data:/var/lib/mysql # Persistance des données
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    networks:
+      - cloud1_network
+
+  wordpress:
+    image: wordpress:latest
+    container_name: cloud1_wordpress
+    restart: always
+    depends_on:
+      - mariadb
+    volumes:
+      - wp_data:/var/www/html # Persistance des fichiers du site
+    environment:
+      WORDPRESS_DB_HOST: mariadb:3306
+      WORDPRESS_DB_USER: ${DB_USER}
+      WORDPRESS_DB_PASSWORD: ${DB_PASSWORD}
+      WORDPRESS_DB_NAME: ${DB_NAME}
+      WORDPRESS_CONFIG_EXTRA: |
+        define( 'WP_HOME', 'https://${DOMAIN_NAME}' );
+        define( 'WP_SITEURL', 'https://${DOMAIN_NAME}' );
+        $$_SERVER['HTTPS'] = 'on';
+    networks:
+      - cloud1_network
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: cloud1_phpmyadmin
+    restart: always
+    depends_on:
+      - mariadb
+    environment:
+      PMA_HOST: mariadb
+    networks:
+      - cloud1_network
+
+  nginx:
+    image: nginx:latest
+    container_name: cloud1_nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d # Configuration Nginx
+      - ./certs:/etc/nginx/certs # Pour les certificats TLS
+    depends_on:
+      - wordpress
+      - phpmyadmin
+    networks:
+      - cloud1_network
+
+networks:
+  cloud1_network:
+    driver: bridge
+
+volumes:
+  db_data:
+  wp_data:
