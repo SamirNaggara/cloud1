@@ -27,8 +27,15 @@ resource "scaleway_instance_server" "cloud1_server" {
   ip_id = scaleway_instance_ip.cloud1_ip.id
 }
 
-# 5. On génère l'inventaire pour Ansible
+# 5. On génère l'inventaire pour Ansible (Gère le Local ET la Prod)
 resource "local_file" "ansible_inventory" {
-  content  = "[prod]\n${scaleway_instance_ip.cloud1_ip.address} ansible_user=root env=prod main_domain=cloud1.codeyourlife.fr\n"
   filename = "../ansible/inventory.ini"
+  
+  content = <<EOT
+[local]
+127.0.0.1 ansible_connection=local env=local
+
+[prod]
+${scaleway_instance_ip.cloud1_ip.address} ansible_user=root env=prod
+EOT
 }
