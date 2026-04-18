@@ -16,6 +16,7 @@ crash.log
 ansible/inventory.ini
 # On ignore le fichier de secrets réel
 ansible/secrets.yml
+ansible/secrets-local.yml
 # Mais on NE bloque PAS le template (on s'assure qu'il passe)
 !ansible/secrets.yml.example
 !ansible/secrets.yml.dist
