@@ -36,6 +36,6 @@ resource "local_file" "ansible_inventory" {
 127.0.0.1 ansible_connection=local env=local
 
 [prod]
-${scaleway_instance_ip.cloud1_ip.address} ansible_user=root env=prod
+${scaleway_instance_ip.cloud1_ip.address} ansible_user=root env=prod ansible_ssh_private_key_file=~/.ssh/samirscaleway
 EOT
 }
