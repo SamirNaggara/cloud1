@@ -72,3 +72,11 @@ Consulter les logs des conteneurs sur le serveur :
 cd /opt/cloud1
 docker compose logs nginx
 docker compose logs wordpress
+
+docker volume ls
+docker volume inspect cloud1_db_data
+sudo ls -l /var/lib/docker/volumes/cloud1_db_data/_data
+docker ps
+docker network inspect cloud1_cloud1_network
+docker compose logs -f
+docker exec -it cloud1_wordpress bash

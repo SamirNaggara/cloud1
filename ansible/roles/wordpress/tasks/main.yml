@@ -1,0 +1,32 @@
+---
+- name: Start containers via Docker Compose
+  command: docker compose up -d
+  args:
+    chdir: "{{ project_dir }}"
+
+- name: Install WP-CLI inside WordPress container
+  command: >
+    docker exec cloud1_wordpress sh -c "curl -s -o /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar && chmod +x /usr/local/bin/wp"
+  changed_when: false
+  retries: 5
+  delay: 5
+  register: dl_result
+  until: dl_result.rc == 0
+
+- name: Finalize WordPress installation via WP-CLI
+  command: >
+    docker exec cloud1_wordpress wp core install
+    --url="https://{{ main_domain }}"
+    --title="{{ wp_title }}"
+    --admin_user="{{ wp_admin_user }}"
+    --admin_password="{{ wp_admin_password }}"
+    --admin_email="{{ wp_admin_email }}"
+    --allow-root
+  register: wp_install
+  retries: 6
+  delay: 5
+  until: wp_install.rc == 0 or 'WordPress is already installed' in wp_install.stdout
+  changed_when: "'WordPress is already installed' not in wp_install.stdout"
+  failed_when:
+    - wp_install.rc != 0
+    - "'WordPress is already installed' not in wp_install.stdout"

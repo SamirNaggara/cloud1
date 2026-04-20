@@ -1,0 +1,21 @@
+---
+- name: Update APT cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  when: env == 'prod'
+
+- name: Install Docker and dependencies
+  apt:
+    name:
+      - docker.io
+      - docker-compose-v2
+    state: present
+  when: env == 'prod'
+
+- name: Ensure Docker service is started and enabled
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+  when: env == 'prod'

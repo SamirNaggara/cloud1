@@ -1,0 +1,41 @@
+---
+- name: Ensure certs directory exists
+  file:
+    path: "{{ project_dir }}/certs"
+    state: directory
+
+- name: Generate self-signed certificate (LOCAL ONLY)
+  command: >
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048
+    -keyout {{ project_dir }}/certs/cloud1.key
+    -out {{ project_dir }}/certs/cloud1.crt
+    -subj "/C=FR/ST=IDF/L=Paris/O=42/OU=Cloud1/CN={{ main_domain }}"
+    -addext "subjectAltName = DNS:{{ main_domain }}, DNS:pma.{{ main_domain }}"
+  args:
+    creates: "{{ project_dir }}/certs/cloud1.crt"
+  when: env == 'local'
+
+- name: Install Certbot (PROD ONLY)
+  apt:
+    name: certbot
+    state: present
+  when: env == 'prod'
+
+- name: Generate Let's Encrypt certificate (PROD ONLY)
+  command: >
+    certbot certonly --standalone --non-interactive --agree-tos
+    --email contact@codeyourlife.fr
+    -d {{ main_domain }} -d pma.{{ main_domain }}
+  args:
+    creates: "/etc/letsencrypt/live/{{ main_domain }}/fullchain.pem"
+  when: env == 'prod'
+
+- name: Copy Let's Encrypt certs to project folder (PROD ONLY)
+  copy:
+    src: "/etc/letsencrypt/live/{{ main_domain }}/{{ item.src }}"
+    dest: "{{ project_dir }}/certs/{{ item.dest }}"
+    remote_src: yes
+  loop:
+    - { src: "fullchain.pem", dest: "cloud1.crt" }
+    - { src: "privkey.pem", dest: "cloud1.key" }
+  when: env == 'prod'
