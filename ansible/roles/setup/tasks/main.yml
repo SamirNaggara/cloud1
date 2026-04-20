@@ -1,0 +1,24 @@
+---
+- name: Create project directory on target server
+  file:
+    path: "{{ project_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Copy specific project files to server
+  copy:
+    src: "{{ playbook_dir }}/../{{ item }}"
+    dest: "{{ project_dir }}/"
+  loop:
+    - docker-compose.yaml
+    - nginx
+
+- name: Generate .env file from template
+  template:
+    src: "{{ playbook_dir }}/templates/env.j2"
+    dest: "{{ project_dir }}/.env"
+
+- name: Deploy Nginx config as default
+  template:
+    src: "{{ playbook_dir }}/../nginx/conf.d/cloud1.conf.j2"
+    dest: "{{ project_dir }}/nginx/conf.d/default.conf"
