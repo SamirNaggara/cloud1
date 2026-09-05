@@ -1,82 +1,33 @@
-Déploiement Cloud-1
+# Cloud-1
 
-Clef Scaleway
+Déploiement d'un WordPress en production sur Scaleway, entièrement automatisé : l'infrastructure est créée par Terraform, la machine est configurée par Ansible, et l'application tourne en conteneurs Docker derrière nginx en TLS. Projet du master architecte des systèmes d'information à 42, spécialité réseaux et sécurité.
 
-    export SCW_ACCESS_KEY="VOTRE_ACCESS_KEY"
-    export SCW_SECRET_KEY="VOTRE_SECRET_KEY"
-    export SCW_DEFAULT_PROJECT_ID="VOTRE_PROJECT_ID"
+Aucune étape manuelle : `terraform apply` crée le serveur, `ansible-playbook` installe tout le reste.
 
-Fichier : ansible/secrets.yml (PROD)
+## Architecture
 
-    	db_name: "wordpress"
-    	db_user: "utilisateur_wp"
-    	db_password: "MON_MOT_DE_PASSE_DB"
-    	db_root_password: "MON_MOT_DE_PASSE_ROOT"
-    	main_domain: "cloud2.codeyourlife.fr"
+```text
+terraform/   création du serveur et du réseau sur Scaleway
+ansible/
+  roles/setup      durcissement de base de la machine
+  roles/docker     installation de Docker
+  roles/wordpress  déploiement de WordPress, MariaDB, phpMyAdmin
+  roles/ssl        certificats TLS
+docker-compose.yaml  nginx, WordPress, base de données
+nginx/               configuration du reverse proxy
+```
 
-    	wp_title: "Mon Super site"
-    	wp_admin_user: "cloud_admin"
-    	wp_admin_password: "MON_MOT_DE_PASSE_ADMIN"
-    	wp_admin_email: "admin@codeyourlife.fr"
+## Les secrets ne sont pas dans le dépôt
 
-Fichier : ansible/secrets-local.yml (LOCAL)
+Les identifiants (clés Scaleway, mots de passe base et admin) vivent dans des fichiers ignorés par git : les variables d'environnement `SCW_*` pour Terraform, et `ansible/secrets.yml` pour Ansible. Ce dépôt ne contient que la structure et des exemples.
 
-    	db_name: "wordpress"
-    	db_user: "utilisateur_wp"
-    	db_password: "MON_MOT_DE_PASSE_DB_LOCAL"
-    	db_root_password: "MON_MOT_DE_PASSE_ROOT_LOCAL"
-    	main_domain: "cloud.local"
+## Déployer
 
-    	wp_title: "Mon Super site local"
-    	wp_admin_user: "cloud_admin"
-    	wp_admin_password: "MON_MOT_DE_PASSE_ADMIN_LOCAL"
-    	wp_admin_email: "admin@codeyourlife.fr"
+```bash
+export SCW_ACCESS_KEY=... SCW_SECRET_KEY=... SCW_DEFAULT_PROJECT_ID=...
 
-3.  Création de l'infrastructure (Terraform)
+cd terraform && terraform init && terraform apply -auto-approve
+cd ../ansible && ansible-playbook -i inventory.ini playbook.yml -e "@secrets.yml" --limit prod
+```
 
-        	cd terraform
-        	terraform init
-        	terraform apply -auto-approve
-
-4.  Configuration DNS (PROD)
-
-        	cloud2.codeyourlife.fr ➔ [NOUVELLE_IP]
-        	pma.cloud2.codeyourlife.fr ➔ [NOUVELLE_IP]
-
-
-        	sudo vim /etc/hosts
-        	[NOUVELLE_IP] cloud2.codeyourlife.fr pma.cloud2.codeyourlife.fr
-
-5.  Déploiement (Ansible)
-
-        	cd ../ansible
-        	ansible-playbook -i inventory.ini playbook.yml -e "@secrets.yml" --limit prod
-
-Pour le LOCAL :
-
-    		cd ../ansible
-    		ansible-playbook -i inventory.ini playbook.yml -e "@secrets-local.yml" --limit local -k
-
-6.  Destruction de l'environnement
-
-        	cd ../terraform
-        	terraform destroy -auto-approve
-
-🛠️ Commandes utiles de débug
-
-Si la meme IP a deja été donné
-ssh-keygen -R <L_ADRESSE_IP>
-
-Consulter les logs des conteneurs sur le serveur :
-
-cd /opt/cloud1
-docker compose logs nginx
-docker compose logs wordpress
-
-docker volume ls
-docker volume inspect cloud1_db_data
-sudo ls -l /var/lib/docker/volumes/cloud1_db_data/_data
-docker ps
-docker network inspect cloud1_cloud1_network
-docker compose logs -f
-docker exec -it cloud1_wordpress bash
+`terraform destroy` détruit toute l'infrastructure.
